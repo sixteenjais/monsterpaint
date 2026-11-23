@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Monster Paint – Engelsk i 2. klasse</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Fredoka & Nunito -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --font-display: 'Fredoka', sans-serif;
+            --font-body: 'Nunito', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: var(--font-body);
+            background-color: #f8fafc;
+            touch-action: manipulation;
+        }
+
+        h1, h2, h3, .font-display {
+            font-family: var(--font-display);
+        }
+
+        /* Interaktive områder på monsteret */
+        .monster-part {
+            cursor: pointer;
+            transition: filter 0.18s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform-origin: center;
+        }
+
+        .monster-part:hover {
+            filter: brightness(0.95) drop-shadow(0 0 6px rgba(99, 102, 241, 0.45));
+        }
+
+        /* Pulserende markering på det aktive mål-område på monsteret */
+        @keyframes targetPulse {
+            0%, 100% {
+                filter: drop-shadow(0 0 2px rgba(245, 158, 11, 0.4));
+            }
+            50% {
+                filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.95));
+            }
+        }
+
+        .monster-part-target {
+            animation: targetPulse 1.5s infinite ease-in-out;
+        }
+
+        /* Ryste-animation ved forkert svar */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-8px) rotate(-1.5deg); }
+            40% { transform: translateX(8px) rotate(1.5deg); }
+            60% { transform: translateX(-6px); }
+            80% { transform: translateX(6px); }
+        }
+
+        .animate-shake {
+            animation: shake 0.42s ease-in-out;
+        }
+
+        /* Fejrings-pop */
+        @keyframes popCelebrate {
+            0% { transform: scale(0.88); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .animate-pop {
+            animation: popCelebrate 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        /* Konfetti/maling-partikler */
+        @keyframes burstParticle {
+            0% {
+                opacity: 1;
+                transform: translate(0, 0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(var(--tx), var(--ty)) scale(0.2);
+            }
+        }
+
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            border-radius: 9999px;
+            animation: burstParticle 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            z-index: 40;
+        }
+
+        /* Malerpalet-knapper */
+        .palette-btn {
+            transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.14s ease, border-color 0.14s ease;
+            touch-action: manipulation;
+        }
+
+        .palette-btn:active {
+            transform: scale(0.94);
+        }
+
+        .palette-btn-selected {
+            transform: scale(1.04);
+            box-shadow: 0 0 0 4px #6366f1, 0 10px 15px -3px rgba(99, 102, 241, 0.3);
+            border-color: #4f46e5 !important;
+        }
+    </style>
+</head>
+<body class="flex flex-col w-screen h-screen bg-slate-100 text-slate-800">
+
+    <!-- =====================================================================
+         STARTSKÆRM / LÆRER-INDSTILLINGER
+    ====================================================================== -->
+    <div id="start-screen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gradient-to-br from-purple-100 via-indigo-50 to-emerald-100 overflow-y-auto">
+        <div class="w-full max-w-3xl bg-white rounded-3xl shadow-2xl border-4 border-white p-6 sm:p-8 my-auto">
+            <!-- Titel og intro -->
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-100 text-purple-800 font-bold text-sm mb-2">
+                    <span>👾 Engelsk i 2. klasse</span>
+                    <span>•</span>
+                    <span>Samarbejde &amp; Ordforråd</span>
+                </div>
+                <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-slate-900">
+                    Monster <span class="text-purple-600">Paint</span> 🎨
+                </h1>
+                <p class="text-slate-600 mt-1 text-base sm:text-lg font-semibold">
+                    Find det rigtige engelske farveord på paletten og mal monsteret sammen!
+                </p>
+            </div>
+
+            <!-- Holdnavne -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                <div class="bg-sky-50 border-2 border-sky-200 rounded-2xl p-4">
+                    <label for="team1-input" class="block text-xs font-extrabold uppercase tracking-wider text-sky-700 mb-1">
+                        Hold 1 (Blå pensel)
+                    </label>
+                    <input id="team1-input" type="text" value="Hold 1" maxlength="16"
+                        class="w-full px-3.5 py-2.5 text-lg font-bold text-sky-950 bg-white border-2 border-sky-300 rounded-xl focus:outline-none focus:border-sky-500">
+                </div>
+                <div class="bg-rose-50 border-2 border-rose-200 rounded-2xl p-4">
+                    <label for="team2-input" class="block text-xs font-extrabold uppercase tracking-wider text-rose-700 mb-1">
+                        Hold 2 (Rød pensel)
+                    </label>
+                    <input id="team2-input" type="text" value="Hold 2" maxlength="16"
+                        class="w-full px-3.5 py-2.5 text-lg font-bold text-rose-950 bg-white border-2 border-rose-300 rounded-xl focus:outline-none focus:border-rose-500">
+                </div>
+            </div>
+
+            <!-- Spil-indstillinger -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                <!-- 1. Hjælpemidler -->
+                <div class="bg-slate-50 border-2 border-slate-200 rounded-2xl p-4">
+                    <span class="block text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-2">
+                        1. Opgavetype
+                    </span>
+                    <div class="flex flex-col gap-2">
+                        <button type="button" data-mode="both" class="mode-btn w-full py-2 px-3 rounded-xl font-bold text-sm text-left border-2 transition-all bg-indigo-600 text-white border-indigo-600 shadow-sm">
+                            🔊 + 📖 Lyd &amp; Tekst
+                        </button>
+                        <button type="button" data-mode="audio" class="mode-btn w-full py-2 px-3 rounded-xl font-bold text-sm text-left border-2 transition-all bg-white text-slate-700 border-slate-200 hover:border-indigo-300">
+                            🔊 Kun Lyd (Lyt &amp; læs)
+                        </button>
+                        <button type="button" data-mode="text" class="mode-btn w-full py-2 px-3 rounded-xl font-bold text-sm text-left border-2 transition-all bg-white text-slate-700 border-slate-200 hover:border-indigo-300">
+                            📖 Kun Tekst (Læsetræning)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 2. Palet-sværhedsgrad -->
+                <div class="bg-slate-50 border-2 border-slate-200 rounded-2xl p-4">
+                    <span class="block text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-2">
+                        2. Malerpaletten
+                    </span>
+                    <div class="flex flex-col gap-2">
+                        <button type="button" data-palette="words-only" class="palette-mode-btn w-full py-2 px-3 rounded-xl font-bold text-sm text-left border-2 transition-all bg-indigo-600 text-white border-indigo-600 shadow-sm">
+                            🔤 Kun engelske ord
+                        </button>
+                        <button type="button" data-palette="with-dots" class="palette-mode-btn w-full py-2 px-3 rounded-xl font-bold text-sm text-left border-2 transition-all bg-white text-slate-700 border-slate-200 hover:border-indigo-300">
+                            🎨 Ord + lille farveprik
+                        </button>
+                    </div>
+                    <p class="text-[11px] font-semibold text-slate-500 mt-2 leading-tight">
+                        "Kun ord" træner afkodning ligesom dit vendespil!
+                    </p>
+                </div>
+
+                <!-- 3. Antal opgaver (monster-dele) -->
+                <div class="bg-slate-50 border-2 border-slate-200 rounded-2xl p-4">
+                    <span class="block text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-2">
+                        3. Vælg Monster
+                    </span>
+                    <div class="flex flex-col gap-2">
+                        <button type="button" data-monster="0" class="monster-btn w-full py-2 px-3 rounded-xl font-bold text-sm text-left border-2 transition-all bg-indigo-600 text-white border-indigo-600 shadow-sm">
+                            👾 Ziggy (8 felter)
+                        </button>
+                        <button type="button" data-monster="1" class="monster-btn w-full py-2 px-3 rounded-xl font-bold text-sm text-left border-2 transition-all bg-white text-slate-700 border-slate-200 hover:border-indigo-300">
+                            🐙 Blobby (11 felter – alle farver!)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stemme-kontrol og farveoversigt -->
+            <div class="mb-6 bg-slate-50 rounded-2xl p-3 border border-slate-200">
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-2 mb-2 px-1">
+                    <p class="text-xs font-bold text-slate-600 uppercase tracking-wider">
+                        🔊 Test engelsk udtale af de 11 farver:
+                    </p>
+                    <button id="open-voice-panel-btn" type="button"
+                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-indigo-100 hover:bg-indigo-200 text-indigo-800 font-extrabold text-xs transition cursor-pointer">
+                        <span>🎙️</span>
+                        <span id="current-voice-label">Vælg stemme</span>
+                    </button>
+                </div>
+                <div id="preview-colors" class="flex flex-wrap justify-center gap-1.5"></div>
+            </div>
+
+            <!-- Start-knap -->
+            <div class="flex flex-col sm:flex-row gap-3">
+                <button id="start-game-btn" type="button"
+                    class="flex-1 py-4 px-8 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-display text-2xl sm:text-3xl font-bold rounded-2xl shadow-lg hover:shadow-xl transform transition active:scale-95 cursor-pointer">
+                    🖌️ Start Monster Paint!
+                </button>
+                <button id="start-fullscreen-btn" type="button" title="Fuld skærm til Smartboard"
+                    class="py-4 px-5 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold rounded-2xl transition active:scale-95 cursor-pointer flex items-center justify-center gap-2">
+                    <span>⛶</span>
+                    <span class="sm:hidden">Fuld skærm</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =====================================================================
+         AKTIV SPILSKÆRM
+    ====================================================================== -->
+    <div id="game-screen" class="hidden flex-col w-full h-full">
+
+        <!-- ØVERSTE HUD & OPGAVE-BJÆLKE -->
+        <header class="relative z-20 bg-white border-b-4 border-slate-200 shadow-sm px-3 sm:px-6 py-2 flex items-center justify-between gap-2 shrink-0">
+            
+            <!-- Hold 1 kort -->
+            <div id="hud-team1-card" class="flex items-center gap-2.5 px-3 sm:px-4 py-1.5 rounded-2xl border-3 transition-all bg-sky-100 border-sky-500 shadow-sm min-w-[115px] sm:min-w-[165px]">
+                <div class="w-4 h-4 rounded-full bg-sky-500 shrink-0"></div>
+                <div class="truncate">
+                    <div class="flex items-center gap-1.5">
+                        <span id="hud-team1-name" class="text-xs sm:text-sm font-extrabold text-sky-900 uppercase tracking-wide truncate">Hold 1</span>
+                        <span id="hud-team1-turn" class="px-1.5 py-0.5 rounded bg-sky-600 text-white text-[10px] font-black uppercase">TUR</span>
+                    </div>
+                    <div class="text-2xl sm:text-3xl font-display font-bold text-sky-950 leading-none">
+                        <span id="hud-team1-score">0</span> <span class="text-xs font-bold text-sky-700">pt</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Midten: Opgave-boks -->
+            <div class="flex items-center justify-center gap-2 sm:gap-3 flex-1 max-w-2xl">
+                <button id="replay-audio-btn" type="button" title="Hør opgaven igen"
+                    class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-90 text-white flex items-center justify-center shadow-md transition cursor-pointer shrink-0">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5L6 9H2v6h4l5 4V5z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.54 8.46a5 5 0 010 7.07M19.07 4.93a10 10 0 010 14.14"></path>
+                    </svg>
+                </button>
+
+                <div id="prompt-box" class="flex-1 bg-slate-900 text-white px-4 sm:px-6 py-2 rounded-2xl shadow-inner text-center border-2 border-slate-700 min-w-[170px]">
+                    <div id="prompt-turn-label" class="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider text-amber-300">
+                        Hold 1's tur:
+                    </div>
+                    <div id="prompt-main-text" class="font-display text-xl sm:text-3xl font-bold tracking-wide leading-tight text-white">
+                        Color the belly <span class="underline decoration-amber-400">PURPLE</span>!
+                    </div>
+                </div>
+            </div>
+
+            <!-- Højre: Hold 2 kort + Lærer-værktøjer -->
+            <div class="flex items-center gap-2 sm:gap-3">
+                <div id="hud-team2-card" class="flex items-center justify-end gap-2.5 px-3 sm:px-4 py-1.5 rounded-2xl border-2 transition-all bg-slate-100 border-slate-200 opacity-65 min-w-[115px] sm:min-w-[165px] text-right">
+                    <div class="truncate">
+                        <div class="flex items-center justify-end gap-1.5">
+                            <span id="hud-team2-turn" class="hidden px-1.5 py-0.5 rounded bg-rose-600 text-white text-[10px] font-black uppercase">TUR</span>
+                            <span id="hud-team2-name" class="text-xs sm:text-sm font-extrabold text-rose-900 uppercase tracking-wide truncate">Hold 2</span>
+                        </div>
+                        <div class="text-2xl sm:text-3xl font-display font-bold text-rose-950 leading-none">
+                            <span id="hud-team2-score">0</span> <span class="text-xs font-bold text-rose-700">pt</span>
+                        </div>
+                    </div>
+                    <div class="w-4 h-4 rounded-full bg-rose-500 shrink-0"></div>
+                </div>
+
+                <!-- Værktøjsknapper -->
+                <div class="flex flex-col sm:flex-row gap-1.5">
+                    <button id="hud-voice-btn" type="button" title="Test & vælg engelsk stemme"
+                        class="p-2.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-800 rounded-xl font-bold text-sm transition cursor-pointer">
+                        🎙️
+                    </button>
+                    <button id="fullscreen-btn" type="button" title="Fuld skærm"
+                        class="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm transition cursor-pointer">
+                        ⛶
+                    </button>
+                    <button id="settings-btn" type="button" title="Tilbage til indstillinger"
+                        class="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm transition cursor-pointer">
+                        ⚙️
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- HOVEDOMRÅDE: MONSTER-LÆRRED + MALERPALET -->
+        <main class="relative flex-1 grid grid-cols-1 lg:grid-cols-12 w-full h-full overflow-hidden">
+            
+            <!-- VENSTRE/MIDTERSTE DEL: MONSTER-TEGNINGEN (7 kolonner på stor skærm) -->
+            <section class="lg:col-span-7 relative flex flex-col items-center justify-between bg-gradient-to-b from-amber-50/70 via-white to-indigo-50/60 p-3 sm:p-5 overflow-hidden border-b-4 lg:border-b-0 lg:border-r-4 border-slate-200">
+                
+                <!-- Status-bjælke over monsteret -->
+                <div class="w-full flex items-center justify-between gap-2 z-10">
+                    <span id="progress-badge" class="px-3.5 py-1 rounded-full bg-slate-200 text-slate-800 font-extrabold text-xs sm:text-sm">
+                        Malet: 0 / 8
+                    </span>
+                    <div id="step-guide-badge" class="px-3.5 py-1 rounded-full bg-amber-100 border border-amber-300 text-amber-900 font-extrabold text-xs sm:text-sm">
+                        Trin 1: Vælg det rigtige farveord på paletten 👉
+                    </div>
+                </div>
+
+                <!-- SVG Monster Container -->
+                <div id="monster-stage" class="flex-1 w-full max-w-[520px] flex items-center justify-center my-1 overflow-hidden">
+                    <!-- Indsættes dynamisk af JavaScript -->
+                </div>
+
+                <!-- Valgt pensel-indikator i bunden -->
+                <div class="w-full flex items-center justify-center gap-3 z-10">
+                    <div class="inline-flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-white border-2 border-slate-300 shadow-sm">
+                        <span class="text-lg">🖌️</span>
+                        <span class="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-slate-500">Valgt maling:</span>
+                        <span id="selected-brush-swatch" class="w-5 h-5 rounded-full border-2 border-slate-400 bg-slate-100 inline-block"></span>
+                        <span id="selected-brush-name" class="font-display text-lg sm:text-xl font-bold text-slate-800 uppercase">Ingen valgt</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- HØJRE DEL: MALERPALET MED DE 11 ENGELSKE ORD (5 kolonner på stor skærm) -->
+            <section class="lg:col-span-5 flex flex-col bg-slate-100 p-3 sm:p-5 overflow-y-auto">
+                <div class="flex items-center justify-between mb-2.5">
+                    <div>
+                        <h2 class="font-display text-xl sm:text-2xl font-bold text-slate-800 leading-none">
+                            🎨 Malerpalet (11 farver)
+                        </h2>
+                        <p class="text-xs sm:text-sm font-bold text-slate-500 mt-0.5">
+                            1. Tryk på farvens ord &nbsp;→&nbsp; 2. Tryk på monsteret!
+                        </p>
+                    </div>
+                    <button id="shuffle-palette-btn" type="button" title="Bland ordene på paletten"
+                        class="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-200 border-2 border-slate-300 text-slate-700 font-bold text-xs transition cursor-pointer">
+                        🔀 Bland ord
+                    </button>
+                </div>
+
+                <!-- 11 Farveord-knapper -->
+                <div id="palette-grid" class="flex-1 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-2.5 sm:gap-3 content-stretch">
+                    <!-- Indsættes dynamisk -->
+                </div>
+            </section>
+
+            <!-- RUNDE-FEEDBACK TOAST -->
+            <div id="feedback-toast" class="hidden pointer-events-none fixed bottom-6 left-1/2 -translate-x-1/2 z-40 px-6 py-3 rounded-2xl bg-slate-900/95 text-white font-display text-xl sm:text-2xl font-bold shadow-2xl border-2 border-white/20 text-center">
+                Super! +1 point!
+            </div>
+
+        </main>
+    </div>
+
+    <!-- =====================================================================
+         FÆRDIGMALET MONSTER / VINDERSKÆRM (MODAL)
+    ====================================================================== -->
+    <div id="winner-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
+        <div class="bg-white rounded-3xl border-4 border-amber-300 shadow-2xl p-6 sm:p-8 max-w-lg w-full text-center animate-pop">
+            <div class="text-5xl sm:text-6xl mb-2">🎨👾🏆</div>
+            <div class="inline-block px-4 py-1 rounded-full bg-emerald-100 text-emerald-800 font-extrabold text-sm uppercase tracking-wider mb-2">
+                Monsteret er færdigmalet!
+            </div>
+            <h2 id="winner-title" class="font-display text-3xl sm:text-4xl font-bold text-slate-900 mb-2">
+                Flot samarbejde!
+            </h2>
+            <p id="winner-score-summary" class="text-lg font-bold text-slate-600 mb-6">
+                Hold 1: 5 point • Hold 2: 6 point
+            </p>
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <button id="play-again-btn" type="button"
+                    class="py-3.5 px-6 bg-purple-600 hover:bg-purple-700 text-white font-display text-xl font-bold rounded-2xl shadow-md transition active:scale-95 cursor-pointer">
+                    🔄 Mal et nyt monster
+                </button>
+                <button id="back-to-menu-btn" type="button"
+                    class="py-3.5 px-6 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold rounded-2xl transition active:scale-95 cursor-pointer">
+                    ⚙️ Skift indstillinger
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =====================================================================
+         TEST & VÆLG STEMME MODAL
+    ====================================================================== -->
+    <div id="voice-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-sm">
+        <div class="bg-white rounded-3xl border-4 border-indigo-200 shadow-2xl p-6 sm:p-8 max-w-2xl w-full max-h-[92vh] overflow-y-auto animate-pop">
+            <div class="flex items-start justify-between gap-4 mb-4">
+                <div>
+                    <span class="inline-block px-3 py-1 rounded-full bg-indigo-100 text-indigo-800 font-extrabold text-xs uppercase tracking-wider mb-1">
+                        🎙️ Lyd- &amp; Udtalekontrol
+                    </span>
+                    <h2 class="font-display text-2xl sm:text-3xl font-bold text-slate-900">
+                        Test &amp; Vælg Engelsk Stemme
+                    </h2>
+                    <p class="text-slate-600 text-sm font-semibold mt-0.5">
+                        Vælg den tydeligste engelske stemme på dit smartboard og test alle 11 farver.
+                    </p>
+                </div>
+                <button id="close-voice-modal-btn" type="button"
+                    class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-lg flex items-center justify-center shrink-0 cursor-pointer">
+                    ✕
+                </button>
+            </div>
+
+            <div class="bg-slate-50 border-2 border-slate-200 rounded-2xl p-4 mb-5">
+                <label for="voice-select" class="block text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">
+                    Engelske stemmer på enheden:
+                </label>
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <select id="voice-select"
+                        class="flex-1 px-3.5 py-2.5 bg-white border-2 border-indigo-300 rounded-xl font-bold text-sm text-slate-800 focus:outline-none focus:border-indigo-500">
+                        <option value="">Indlæser engelske stemmer...</option>
+                    </select>
+                    <button id="test-all-colors-btn" type="button"
+                        class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl shadow-sm transition active:scale-95 cursor-pointer shrink-0">
+                        ▶️ Afspil alle 11
+                    </button>
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <span class="block text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-2">
+                    Klik på en farve for at høre udtalen:
+                </span>
+                <div id="voice-test-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5"></div>
+            </div>
+
+            <div class="flex justify-end">
+                <button id="done-voice-modal-btn" type="button"
+                    class="py-3 px-6 bg-emerald-500 hover:bg-emerald-600 text-white font-display text-lg font-bold rounded-2xl shadow-md transition active:scale-95 cursor-pointer">
+                    ✓ Klar til spil
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * =====================================================================
+         * DE 11 ENGELSKE FARVER
+         * =====================================================================
+         */
+        const COLORS = [
+            { id: 'pink',   name: 'pink',   hex: '#f472b6', stroke: '#db2777', textDark: false },
+            { id: 'green',  name: 'green',  hex: '#22c55e', stroke: '#15803d', textDark: false },
+            { id: 'brown',  name: 'brown',  hex: '#854d0e', stroke: '#5c3409', textDark: false },
+            { id: 'purple', name: 'purple', hex: '#a855f7', stroke: '#7e22ce', textDark: false },
+            { id: 'orange', name: 'orange', hex: '#f97316', stroke: '#c2410c', textDark: false },
+            { id: 'yellow', name: 'yellow', hex: '#facc15', stroke: '#ca8a04', textDark: true  },
+            { id: 'red',    name: 'red',    hex: '#ef4444', stroke: '#b91c1c', textDark: false },
+            { id: 'blue',   name: 'blue',   hex: '#3b82f6', stroke: '#1d4ed8', textDark: false },
+            { id: 'black',  name: 'black',  hex: '#1e293b', stroke: '#0f172a', textDark: false },
+            { id: 'white',  name: 'white',  hex: '#ffffff', stroke: '#94a3b8', textDark: true  },
+            { id: 'gray',   name: 'gray',   hex: '#9ca3af', stroke: '#4b5563', textDark: false }
+        ];
+
+        /**
+         * =====================================================================
+         * TO SJOVE MONSTER-SKABELONER (ZIGGY MED 8 FELTER & BLOBBY MED 11 FELTER)
+         * =====================================================================
+         */
+        const MONSTERS = [
+            {
+                id: 'ziggy',
+                name: 'Ziggy',
+                parts: [
+                    { id: 'horns', label: 'the horns', labelDa: 'hornene' },
+                    { id: 'head',  label: 'the head',  labelDa: 'hovedet' },
+                    { id: 'ears',  label: 'the ears',  labelDa: 'ørerne' },
+                    { id: 'body',  label: 'the body',  labelDa: 'kroppen' },
+                    { id: 'belly', label: 'the belly', labelDa: 'maven' },
+                    { id: 'arms',  label: 'the arms',  labelDa: 'armene' },
+                    { id: 'legs',  label: 'the legs',  labelDa: 'benene' },
+                    { id: 'shoes', label: 'the shoes', labelDa: 'skoene' }
+                ],
+                renderSVG: () => `
+                    <svg viewBox="0 0 420 440" class="w-full h-full max-h-[54vh] drop-shadow-lg overflow-visible">
+                        <!-- BEN (legs) -->
+                        <g data-part="legs" class="monster-part">
+                            <rect x="148" y="325" width="38" height="65" rx="14" fill="#f1f5f9" stroke="#1e293b" stroke-width="5" />
+                            <rect x="234" y="325" width="38" height="65" rx="14" fill="#f1f5f9" stroke="#1e293b" stroke-width="5" />
+                        </g>
+
+                        <!-- SKO (shoes) -->
+                        <g data-part="shoes" class="monster-part">
+                            <path d="M122,385 C122,370 150,368 188,372 L188,402 L122,402 Z" fill="#f1f5f9" stroke="#1e293b" stroke-width="5" stroke-linejoin="round" />
+                            <path d="M298,385 C298,370 270,368 232,372 L232,402 L298,402 Z" fill="#f1f5f9" stroke="#1e293b" stroke-width="5" stroke-linejoin="round" />
+                        </g>
+
+                        <!-- ARME (arms) -->
+                        <g data-part="arms" class="monster-part">
+                            <path d="M115,215 C65,205 42,245 55,285 C62,305 84,300 84,282 C84,265 95,248 118,248 Z" fill="#f1f5f9" stroke="#1e293b" stroke-width="5" stroke-linejoin="round" />
+                            <path d="M305,215 C355,205 378,245 365,285 C358,305 336,300 336,282 C336,265 325,248 302,248 Z" fill="#f1f5f9" stroke="#1e293b" stroke-width="5" stroke-linejoin="round" />
+                        </g>
+
+                        <!-- KROP (body) -->
+                        <g data-part="body" class="monster-part">
+                            <rect x="112" y="185" width="196" height="155" rx="68" fill="#f1f5f9" stroke="#1e293b" stroke-width="5" />
+                        </g>
+
+                        <!-- MAVE (belly) -->
+                        <g data-part="belly" class="monster-part">
+                            <ellipse cx="210" cy="268" rx="62" ry="52" fill="#f1f5f9" stroke="#1e293b" stroke-width="5" />
+                        </g>
+
+                        <!-- HORN (horns) -->
+                        <g data-part="horns" class="monster-part">
+                            <path d="M145,75 C128,45 135,18 158,15 C154,35 162,55 174,66 Z" fill="#f1f5f9" stroke="#1e293b" stroke-width="5" stroke-linejoin="round" />
+                            <path d="M275,75 C292,45 285,18 262,15 C266,35 258,55 246,66 Z" fill="#f1f5f9" stroke="#1e293b" stroke-width="5" stroke-linejoin="round" />
+                        </g>
+
+                        <!-- ØRER (ears) -->
+                        <g data-part="ears" class="monster-part">
+                            <circle cx="106" cy="126" r="24" fill="#f1f5f9" stroke="#1e293b" stroke-width="5" />
+                            <circle cx="314" cy="126" r="24" fill="#f1f5f9" stroke="#1e293b" stroke-width="5" />
+                        </g>
+
+                        <!-- HOVED (head) -->
+                        <g data-part="head" class="monster-part">
+                            <rect x="115" y="62" width="190" height="135" rx="62" fill="#f1f5f9" stroke="#1e293b" stroke-width="5" />
+                        </g>
+
+                        <!-- ANSIGTSDETALJER (fast pynt) -->
+                        <g pointer-events="none">
+                            <circle cx="172" cy="118" r="22" fill="#ffffff" stroke="#1e293b" stroke-width="4" />
+                            <circle cx="248" cy="118" r="22" fill="#ffffff" stroke="#1e293b" stroke-width="4" />
+                            <circle cx="176" cy="118" r="9" fill="#0f172a" />
+                            <circle cx="244" cy="118" r="9" fill="#0f172a" />
+                            <circle cx="179" cy="114" r="3" fill="#ffffff" />
+                            <circle cx="247" cy="114" r="3" fill="#ffffff" />
+                            <!-- Smil + tænder -->
+                            <path d="M168,155 Q210,182 252,155" fill="none" stroke="#1e293b" stroke-width="5" stroke-linecap="round" />
+                            <polygon points="184,162 192,175 200,164" fill="#ffffff" stroke="#1e293b" stroke-width="3" />
+                            <polygon points="220,164 228,175 236,162" fill="#ffffff" stroke="#1e293b" stroke-width="3" />
+                        </g>
+                    </svg>
+                `
+            },
+            {
+                id: 'blobby',
+                name: 'Blobby',
+                parts: [
+                    { id: 'crown',     label: 'the crown',     labelDa: 'kronen' },
+                    { id: 'antennas',  label: 'the antennas',  labelDa: 'følehornene' },
+                    { id: 'head',      label: 'the head',      labelDa: 'hovedet' },
+                    { id: 'nose',      label: 'the nose',      labelDa: 'næsen' },
+                    { id: 'bowtie',    label: 'the bow tie',   labelDa: 'sløjfen' },
+                    { id: 'body',      label: 'the body',      labelDa: 'kroppen' },
+                    { id: 'spots',     label: 'the spots',     labelDa: 'pletterne' },
+                    { id: 'left_arm',  label: 'the left arm',  labelDa: 'venstre arm' },
+                    { id: 'right_arm', label: 'the right arm', labelDa: 'højre arm' },
+                    { id: 'tail',      label: 'the tail',      labelDa: 'halen' },
+                    { id: 'feet',      label: 'the feet',      labelDa: 'fødderne' }
+                ],
+                renderSVG: () => `
+                    <svg viewBox="0 0 440 440" class="w-full h-full max-h-[54vh] drop-shadow-lg overflow-visible">
+                        <!-- HALE (tail) -->
+                        <g data-part="tail" class="monster-part">
+                            <path d="M312,315 C365,305 395,260 375,230 C362,212 342,226 352,244 C360,258 342,282 308,286 Z" fill="#f1f5f9" stroke="#1e293b" stroke-width="5" stroke-linejoin="round" />
+                        </g>
+
+                        <!-- FØDDER (feet) -->
+                        <g data-part="feet" class="monster-part">
+                            <ellipse cx="162" cy="392" rx="42" ry="20" fill="#f1f5f9" stroke="#1e293b" stroke-width="5" />
+                            <ellipse cx="278" cy="392" rx="42" ry="20" fill="#f1f5f9" stroke="#1e293b" stroke-width="5" />
+                        </g>
+
+                        <!-- VENSTRE ARM (left_arm) -->
+                        <g data-part="left_arm" class="monster-part">
+                            <path d="M118,235 C70,210 42,175 64,155 C82,140 100,165 92,184 C86,198 105,212 126,216 Z" fill="#f1f5f9" stroke="#1e293b" stroke-width="5" stroke-linejoin="round" />
+                        </g>
+
+                        <!-- HØJRE ARM (right_arm) -->
+                        <g data-part="right_arm" class="monster-part">
+                            <path d="M322,235 C370,210 398,175 376,155 C358,140 340,165 348,184 C354,198 335,212 314,216 Z" fill="#f1f5f9" stroke="#1e293b" stroke-width="5" stroke-linejoin="round" />
+                        </g>
+
+                        <!-- KROP (body) -->
+                        <g data-part="body" class="monster-part">
+                            <path d="M125,195 C105,260 112,375 165,382 L275,382 C328,375 335,260 315,195 Z" fill="#f1f5f9" stroke="#1e293b" stroke-width="5" stroke-linejoin="round" />
+                        </g>
+
+                        <!-- PLETTER PÅ MAVEN (spots) -->
+                        <g data-part="spots" class="monster-part">
+                            <circle cx="178" cy="285" r="22" fill="#f1f5f9" stroke="#1e293b" stroke-width="4.5" />
+                            <circle cx="256" cy="272" r="18" fill="#f1f5f9" stroke="#1e293b" stroke-width="4.5" />
+                            <circle cx="220" cy="332" r="24" fill="#f1f5f9" stroke="#1e293b" stroke-width="4.5" />
+                        </g>
+
+                        <!-- FØLEHORN (antennas) -->
+                        <g data-part="antennas" class="monster-part">
+                            <path d="M162,78 L138,34" stroke="#1e293b" stroke-width="6" stroke-linecap="round" />
+                            <circle cx="134" cy="28" r="14" fill="#f1f5f9" stroke="#1e293b" stroke-width="5" />
+                            <path d="M278,78 L302,34" stroke="#1e293b" stroke-width="6" stroke-linecap="round" />
+                            <circle cx="306" cy="28" r="14" fill="#f1f5f9" stroke="#1e293b" stroke-width="5" />
+                        </g>
+
+                        <!-- HOVED (head) -->
+                        <g data-part="head" class="monster-part">
+                            <ellipse cx="220" cy="135" rx="98" ry="72" fill="#f1f5f9" stroke="#1e293b" stroke-width="5" />
+                        </g>
+
+                        <!-- KRONE (crown) -->
+                        <g data-part="crown" class="monster-part">
+                            <polygon points="182,66 192,28 208,52 220,20 232,52 248,28 258,66" fill="#f1f5f9" stroke="#1e293b" stroke-width="4.5" stroke-linejoin="round" />
+                        </g>
+
+                        <!-- SLØJFE (bowtie) -->
+                        <g data-part="bowtie" class="monster-part">
+                            <polygon points="182,196 220,214 182,232" fill="#f1f5f9" stroke="#1e293b" stroke-width="4.5" stroke-linejoin="round" />
+                            <polygon points="258,196 220,214 258,232" fill="#f1f5f9" stroke="#1e293b" stroke-width="4.5" stroke-linejoin="round" />
+                            <circle cx="220" cy="214" r="10" fill="#f1f5f9" stroke="#1e293b" stroke-width="4.5" />
+                        </g>
+
+                        <!-- ØJNE & MUND (fast pynt) -->
+                        <g pointer-events="none">
+                            <circle cx="176" cy="118" r="17" fill="#ffffff" stroke="#1e293b" stroke-width="4" />
+                            <circle cx="220" cy="112" r="19" fill="#ffffff" stroke="#1e293b" stroke-width="4" />
+                            <circle cx="264" cy="118" r="17" fill="#ffffff" stroke="#1e293b" stroke-width="4" />
+                            <circle cx="176" cy="118" r="7" fill="#0f172a" />
+                            <circle cx="220" cy="112" r="8" fill="#0f172a" />
+                            <circle cx="264" cy="118" r="7" fill="#0f172a" />
+                            <path d="M182,166 Q220,188 258,166" fill="none" stroke="#1e293b" stroke-width="5" stroke-linecap="round" />
+                        </g>
+
+                        <!-- NÆSE (nose) -->
+                        <g data-part="nose" class="monster-part">
+                            <ellipse cx="220" cy="144" rx="18" ry="12" fill="#f1f5f9" stroke="#1e293b" stroke-width="4.5" />
+                        </g>
+                    </svg>
+                `
+            }
+        ];
+
+        /**
+         * =====================================================================
+         * SPILTILSTAND (STATE)
+         * =====================================================================
+         */
+        const state = {
+            team1Name: 'Hold 1',
+            team2Name: 'Hold 2',
+            team1Score: 0,
+            team2Score: 0,
+            currentTurn: 1,           // 1 eller 2
+            mode: 'both',             // 'both' | 'audio' | 'text'
+            paletteMode: 'words-only',// 'words-only' | 'with-dots'
+            monsterIndex: 0,
+            tasks: [],                // Liste af { part, color }
+            currentTaskIndex: 0,
+            selectedColorId: null,
+            completedParts: {},       // { partId: colorObj }
+            roundLocked: false,
+            audioCtx: null,
+            englishVoices: [],
+            preferredVoice: null,
+            selectedVoiceURI: null,
+            speakTimer: null,
+            testSequenceTimers: []
+        };
+
+        /**
+         * =====================================================================
+         * LYD-MOTOR & ENGELSK TALESYNTESE
+         * =====================================================================
+         */
+        function initAudioContext() {
+            if (!state.audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) state.audioCtx = new AudioContext();
+            }
+            if (state.audioCtx && state.audioCtx.state === 'suspended') {
+                state.audioCtx.resume();
+            }
+        }
+
+        function playBrushDipSound() {
+            try {
+                initAudioContext();
+                if (!state.audioCtx) return;
+                const now = state.audioCtx.currentTime;
+                const osc = state.audioCtx.createOscillator();
+                const gain = state.audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(420, now);
+                osc.frequency.exponentialRampToValueAtTime(680, now + 0.11);
+                gain.gain.setValueAtTime(0.14, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
+                osc.connect(gain);
+                gain.connect(state.audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.14);
+            } catch (e) {}
+        }
+
+        function playCorrectSound() {
+            try {
+                initAudioContext();
+                if (!state.audioCtx) return;
+                const now = state.audioCtx.currentTime;
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+                    const osc = state.audioCtx.createOscillator();
+                    const gain = state.audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + i * 0.06);
+                    gain.gain.setValueAtTime(0.001, now + i * 0.06);
+                    gain.gain.exponentialRampToValueAtTime(0.18, now + i * 0.06 + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.06 + 0.3);
+                    osc.connect(gain);
+                    gain.connect(state.audioCtx.destination);
+                    osc.start(now + i * 0.06);
+                    osc.stop(now + i * 0.06 + 0.32);
+                });
+            } catch (e) {}
+        }
+
+        function playWrongSound() {
+            try {
+                initAudioContext();
+                if (!state.audioCtx) return;
+                const now = state.audioCtx.currentTime;
+                const osc = state.audioCtx.createOscillator();
+                const gain = state.audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(185, now);
+                osc.frequency.exponentialRampToValueAtTime(110, now + 0.24);
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+                osc.connect(gain);
+                gain.connect(state.audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.28);
+            } catch (e) {}
+        }
+
+        function playVictoryFanfare() {
+            try {
+                initAudioContext();
+                if (!state.audioCtx) return;
+                const now = state.audioCtx.currentTime;
+                [
+                    { f: 523.25, t: 0.0, d: 0.15 },
+                    { f: 659.25, t: 0.16, d: 0.15 },
+                    { f: 783.99, t: 0.32, d: 0.15 },
+                    { f: 1046.50, t: 0.50, d: 0.45 }
+                ].forEach(n => {
+                    const osc = state.audioCtx.createOscillator();
+                    const gain = state.audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(n.f, now + n.t);
+                    gain.gain.setValueAtTime(0.22, now + n.t);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + n.t + n.d);
+                    osc.connect(gain);
+                    gain.connect(state.audioCtx.destination);
+                    osc.start(now + n.t);
+                    osc.stop(now + n.t + n.d + 0.05);
+                });
+            } catch (e) {}
+        }
+
+        function loadVoices() {
+            if (!('speechSynthesis' in window)) return;
+            const allVoices = window.speechSynthesis.getVoices();
+            if (!allVoices.length) return;
+
+            const enVoices = allVoices.filter(v => v.lang && v.lang.toLowerCase().startsWith('en'));
+            const priorityPatterns = [
+                /google us english/i,
+                /google uk english female/i,
+                /google uk english male/i,
+                /microsoft aria/i,
+                /microsoft jenny/i,
+                /microsoft libby/i,
+                /samantha/i,
+                /daniel/i,
+                /natural/i,
+                /neural/i
+            ];
+
+            enVoices.sort((a, b) => {
+                const scoreA = priorityPatterns.findIndex(rx => rx.test(a.name));
+                const scoreB = priorityPatterns.findIndex(rx => rx.test(b.name));
+                const rankA = scoreA === -1 ? 999 : scoreA;
+                const rankB = scoreB === -1 ? 999 : scoreB;
+                if (rankA !== rankB) return rankA - rankB;
+                return a.name.localeCompare(b.name);
+            });
+
+            state.englishVoices = enVoices;
+            if (state.selectedVoiceURI) {
+                state.preferredVoice = enVoices.find(v => v.voiceURI === state.selectedVoiceURI) || enVoices[0] || null;
+            } else {
+                state.preferredVoice = enVoices[0] || null;
+                if (state.preferredVoice) state.selectedVoiceURI = state.preferredVoice.voiceURI;
+            }
+
+            populateVoiceDropdown();
+        }
+
+        function populateVoiceDropdown() {
+            const selectEl = document.getElementById('voice-select');
+            const labelEl = document.getElementById('current-voice-label');
+            if (!selectEl) return;
+
+            if (state.englishVoices.length === 0) {
+                selectEl.innerHTML = '<option value="">Standard engelsk (en-US)</option>';
+                if (labelEl) labelEl.textContent = 'Engelsk (Auto)';
+                return;
+            }
+
+            selectEl.innerHTML = state.englishVoices.map(v => {
+                const selected = state.preferredVoice && v.voiceURI === state.preferredVoice.voiceURI ? 'selected' : '';
+                return `<option value="${v.voiceURI}" ${selected}>${v.name} (${v.lang})</option>`;
+            }).join('');
+
+            if (labelEl && state.preferredVoice) {
+                const shortName = state.preferredVoice.name.replace(/Microsoft |Google |Online \(Natural\) - /g, '').split(' ')[0];
+                labelEl.textContent = `${shortName} (${state.preferredVoice.lang})`;
+            }
+        }
+
+        if ('speechSynthesis' in window) {
+            loadVoices();
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+        }
+
+        function speakEnglish(phrase) {
+            if (!('speechSynthesis' in window)) return;
+            if (state.speakTimer) {
+                clearTimeout(state.speakTimer);
+                state.speakTimer = null;
+            }
+
+            try {
+                if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+                window.speechSynthesis.cancel();
+
+                state.speakTimer = setTimeout(() => {
+                    const cleanPhrase = phrase.trim();
+                    const utterance = new SpeechSynthesisUtterance(
+                        cleanPhrase.endsWith('.') || cleanPhrase.endsWith('!') ? cleanPhrase : `${cleanPhrase}.`
+                    );
+
+                    if (state.preferredVoice) {
+                        utterance.voice = state.preferredVoice;
+                        utterance.lang = state.preferredVoice.lang;
+                    } else {
+                        utterance.lang = 'en-US';
+                    }
+
+                    utterance.rate = 0.85;
+                    utterance.pitch = 1.02;
+                    utterance.volume = 1.0;
+
+                    window.speechSynthesis.speak(utterance);
+                }, 65);
+            } catch (e) {}
+        }
+
+        /**
+         * =====================================================================
+         * HJÆLPEFUNKTIONER
+         * =====================================================================
+         */
+        function shuffleArray(arr) {
+            const copy = [...arr];
+            for (let i = copy.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [copy[i], copy[j]] = [copy[j], copy[i]];
+            }
+            return copy;
+        }
+
+        function spawnBurstParticles(element, hexColor) {
+            const rect = element.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+
+            for (let i = 0; i < 16; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                const size = 10 + Math.random() * 14;
+                const angle = (Math.PI * 2 * i) / 16 + (Math.random() - 0.5) * 0.4;
+                const dist = 50 + Math.random() * 80;
+
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.left = `${centerX - size / 2}px`;
+                particle.style.top = `${centerY - size / 2}px`;
+                particle.style.backgroundColor = hexColor;
+                particle.style.border = '2px solid rgba(0,0,0,0.25)';
+                particle.style.setProperty('--tx', `${Math.cos(angle) * dist}px`);
+                particle.style.setProperty('--ty', `${Math.sin(angle) * dist}px`);
+
+                document.body.appendChild(particle);
+                setTimeout(() => particle.remove(), 750);
+            }
+        }
+
+        let toastTimer = null;
+        function showToast(message, isSuccess = true) {
+            const toast = document.getElementById('feedback-toast');
+            toast.textContent = message;
+            toast.className = `pointer-events-none fixed bottom-6 left-1/2 -translate-x-1/2 z-40 px-6 py-3 rounded-2xl font-display text-xl sm:text-2xl font-bold shadow-2xl border-2 text-center animate-pop ${
+                isSuccess
+                    ? 'bg-emerald-600 text-white border-emerald-300'
+                    : 'bg-rose-600 text-white border-rose-300'
+            }`;
+            toast.classList.remove('hidden');
+
+            if (toastTimer) clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 1500);
+        }
+
+        /**
+         * =====================================================================
+         * STARTSKÆRM & INDSTILLINGER
+         * =====================================================================
+         */
+        function renderPreviewColors() {
+            const container = document.getElementById('preview-colors');
+            container.innerHTML = COLORS.map(c => `
+                <button type="button" data-word="${c.name}"
+                    class="preview-chip px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wide border-2 shadow-sm transition transform hover:scale-105 active:scale-95 cursor-pointer"
+                    style="background-color: ${c.hex}; color: ${c.textDark ? '#0f172a' : '#ffffff'}; border-color: ${c.id === 'white' ? '#64748b' : c.stroke};">
+                    🔊 ${c.name}
+                </button>
+            `).join('');
+
+            container.querySelectorAll('.preview-chip').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    initAudioContext();
+                    speakEnglish(btn.dataset.word);
+                });
+            });
+        }
+
+        function renderVoiceTestGrid() {
+            const grid = document.getElementById('voice-test-grid');
+            if (!grid) return;
+
+            grid.innerHTML = COLORS.map(c => `
+                <button type="button" data-word="${c.name}"
+                    class="voice-test-chip flex items-center justify-between px-4 py-3 rounded-2xl font-display text-lg font-bold uppercase tracking-wide border-2 shadow-sm transition transform hover:scale-[1.03] active:scale-95 cursor-pointer"
+                    style="background-color: ${c.hex}; color: ${c.textDark ? '#0f172a' : '#ffffff'}; border-color: ${c.id === 'white' ? '#475569' : c.stroke};">
+                    <span>${c.name}</span>
+                    <span class="text-base">🔊</span>
+                </button>
+            `).join('');
+
+            grid.querySelectorAll('.voice-test-chip').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    initAudioContext();
+                    speakEnglish(btn.dataset.word);
+                });
+            });
+        }
+
+        function stopTestAllSequence() {
+            state.testSequenceTimers.forEach(t => clearTimeout(t));
+            state.testSequenceTimers = [];
+        }
+
+        function playAllColorsSequence() {
+            initAudioContext();
+            stopTestAllSequence();
+            COLORS.forEach((c, idx) => {
+                const timer = setTimeout(() => {
+                    speakEnglish(c.name);
+                }, idx * 1250);
+                state.testSequenceTimers.push(timer);
+            });
+        }
+
+        function setupStartOptionButtons() {
+            const bindGroup = (selector, callback) => {
+                document.querySelectorAll(selector).forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        document.querySelectorAll(selector).forEach(b => {
+                            b.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-600', 'shadow-sm');
+                            b.classList.add('bg-white', 'text-slate-700', 'border-slate-200');
+                        });
+                        btn.classList.remove('bg-white', 'text-slate-700', 'border-slate-200');
+                        btn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-600', 'shadow-sm');
+                        callback(btn);
+                    });
+                });
+            };
+
+            bindGroup('.mode-btn', btn => { state.mode = btn.dataset.mode; });
+            bindGroup('.palette-mode-btn', btn => { state.paletteMode = btn.dataset.palette; });
+            bindGroup('.monster-btn', btn => { state.monsterIndex = parseInt(btn.dataset.monster, 10); });
+        }
+
+        /**
+         * =====================================================================
+         * SPIL-LOGIK: MALERPALET, MONSTER-INTERAKTION & TURSKIFTE
+         * =====================================================================
+         */
+        function renderPalette(shuffledColors) {
+            const grid = document.getElementById('palette-grid');
+            const colorsToRender = shuffledColors || shuffleArray(COLORS);
+
+            grid.innerHTML = colorsToRender.map(c => {
+                const dotHtml = state.paletteMode === 'with-dots'
+                    ? `<span class="w-5 h-5 rounded-full border-2 shrink-0" style="background-color: ${c.hex}; border-color: ${c.id === 'white' ? '#64748b' : c.stroke};"></span>`
+                    : `<span class="w-4 h-4 rounded-full bg-slate-200 border border-slate-300 shrink-0"></span>`;
+
+                return `
+                    <button type="button" data-color-id="${c.id}"
+                        class="palette-btn flex items-center justify-between px-4 py-2.5 sm:py-3 rounded-2xl bg-white hover:bg-indigo-50 border-3 border-slate-300 shadow-sm cursor-pointer">
+                        <span class="font-display text-xl sm:text-2xl font-bold uppercase tracking-wider text-slate-800">
+                            ${c.name}
+                        </span>
+                        ${dotHtml}
+                    </button>
+                `;
+            }).join('');
+
+            grid.querySelectorAll('.palette-btn').forEach(btn => {
+                btn.addEventListener('click', () => handlePaletteClick(btn.dataset.colorId, btn));
+            });
+        }
+
+        function handlePaletteClick(colorId, btnElement) {
+            if (state.roundLocked) return;
+            initAudioContext();
+            playBrushDipSound();
+
+            state.selectedColorId = colorId;
+            const colorObj = COLORS.find(c => c.id === colorId);
+
+            // Opdater visuel markering på paletten
+            document.querySelectorAll('.palette-btn').forEach(b => b.classList.remove('palette-btn-selected'));
+            btnElement.classList.add('palette-btn-selected');
+
+            // Opdater "Valgt maling"-indikatoren under monsteret
+            const swatch = document.getElementById('selected-brush-swatch');
+            const nameEl = document.getElementById('selected-brush-name');
+            swatch.style.backgroundColor = colorObj ? colorObj.hex : '#f1f5f9';
+            swatch.style.borderColor = colorObj ? (colorObj.id === 'white' ? '#475569' : colorObj.stroke) : '#94a3b8';
+            nameEl.textContent = colorObj ? colorObj.name : 'Ingen valgt';
+
+            // Opdater guide-badge
+            const guide = document.getElementById('step-guide-badge');
+            guide.textContent = 'Trin 2: Tryk på den rigtige del af monsteret! 👈';
+            guide.className = 'px-3.5 py-1 rounded-full bg-indigo-100 border border-indigo-300 text-indigo-900 font-extrabold text-xs sm:text-sm';
+        }
+
+        function renderMonster() {
+            const monster = MONSTERS[state.monsterIndex];
+            const stage = document.getElementById('monster-stage');
+            stage.innerHTML = monster.renderSVG();
+
+            // Gendan eventuelle allerede malede dele
+            Object.entries(state.completedParts).forEach(([partId, colorObj]) => {
+                paintMonsterPartSVG(partId, colorObj);
+            });
+
+            // Tilføj klik-hændelser til alle kropsdele
+            stage.querySelectorAll('.monster-part').forEach(groupEl => {
+                groupEl.addEventListener('click', () => handleMonsterPartClick(groupEl.dataset.part, groupEl));
+            });
+        }
+
+        function paintMonsterPartSVG(partId, colorObj) {
+            const groupEl = document.querySelector(`#monster-stage .monster-part[data-part="${partId}"]`);
+            if (!groupEl) return;
+
+            groupEl.querySelectorAll('path, rect, ellipse, circle, polygon').forEach(shape => {
+                if (shape.getAttribute('fill') && shape.getAttribute('fill') !== 'none') {
+                    shape.setAttribute('fill', colorObj.hex);
+                }
+            });
+        }
+
+        function highlightTargetPart(partId) {
+            document.querySelectorAll('#monster-stage .monster-part').forEach(el => {
+                el.classList.remove('monster-part-target');
+            });
+            const targetEl = document.querySelector(`#monster-stage .monster-part[data-part="${partId}"]`);
+            if (targetEl) {
+                targetEl.classList.add('monster-part-target');
+            }
+        }
+
+        function updateTurnAndScoreHUD() {
+            document.getElementById('hud-team1-score').textContent = state.team1Score;
+            document.getElementById('hud-team2-score').textContent = state.team2Score;
+
+            const card1 = document.getElementById('hud-team1-card');
+            const card2 = document.getElementById('hud-team2-card');
+            const turn1 = document.getElementById('hud-team1-turn');
+            const turn2 = document.getElementById('hud-team2-turn');
+
+            if (state.currentTurn === 1) {
+                card1.className = 'flex items-center gap-2.5 px-3 sm:px-4 py-1.5 rounded-2xl border-3 transition-all bg-sky-100 border-sky-500 shadow-md scale-[1.03] min-w-[115px] sm:min-w-[165px]';
+                turn1.classList.remove('hidden');
+                card2.className = 'flex items-center justify-end gap-2.5 px-3 sm:px-4 py-1.5 rounded-2xl border-2 transition-all bg-slate-100 border-slate-200 opacity-60 min-w-[115px] sm:min-w-[165px] text-right';
+                turn2.classList.add('hidden');
+            } else {
+                card2.className = 'flex items-center justify-end gap-2.5 px-3 sm:px-4 py-1.5 rounded-2xl border-3 transition-all bg-rose-100 border-rose-500 shadow-md scale-[1.03] min-w-[115px] sm:min-w-[165px] text-right';
+                turn2.classList.remove('hidden');
+                card1.className = 'flex items-center gap-2.5 px-3 sm:px-4 py-1.5 rounded-2xl border-2 transition-all bg-slate-100 border-slate-200 opacity-60 min-w-[115px] sm:min-w-[165px]';
+                turn1.classList.add('hidden');
+            }
+
+            const total = state.tasks.length;
+            const done = state.currentTaskIndex;
+            document.getElementById('progress-badge').textContent = `Malet: ${done} / ${total}`;
+        }
+
+        function getCurrentTaskPhrase() {
+            const task = state.tasks[state.currentTaskIndex];
+            if (!task) return '';
+            return `Color ${task.part.label} ${task.color.name}`;
+        }
+
+        function loadCurrentTask() {
+            state.roundLocked = false;
+            state.selectedColorId = null;
+
+            // Nulstil valgt pensel i UI
+            document.querySelectorAll('.palette-btn').forEach(b => b.classList.remove('palette-btn-selected'));
+            const swatch = document.getElementById('selected-brush-swatch');
+            swatch.style.backgroundColor = '#f1f5f9';
+            swatch.style.borderColor = '#94a3b8';
+            document.getElementById('selected-brush-name').textContent = 'Ingen valgt';
+
+            const guide = document.getElementById('step-guide-badge');
+            guide.textContent = 'Trin 1: Vælg det rigtige farveord på paletten 👉';
+            guide.className = 'px-3.5 py-1 rounded-full bg-amber-100 border border-amber-300 text-amber-900 font-extrabold text-xs sm:text-sm';
+
+            updateTurnAndScoreHUD();
+
+            const task = state.tasks[state.currentTaskIndex];
+            if (!task) return;
+
+            highlightTargetPart(task.part.id);
+
+            const activeTeamName = state.currentTurn === 1 ? state.team1Name : state.team2Name;
+            const turnLabelEl = document.getElementById('prompt-turn-label');
+            turnLabelEl.textContent = `${activeTeamName}'s tur (${task.part.labelDa}):`;
+            turnLabelEl.className = `text-[11px] sm:text-xs font-extrabold uppercase tracking-wider ${
+                state.currentTurn === 1 ? 'text-sky-300' : 'text-rose-300'
+            }`;
+
+            const mainTextEl = document.getElementById('prompt-main-text');
+            const audioBtn = document.getElementById('replay-audio-btn');
+
+            if (state.mode === 'audio') {
+                mainTextEl.innerHTML = `<span class="text-amber-300">🔊 Lyt til opgaven!</span> <span class="text-base sm:text-xl text-slate-300">(${task.part.label})</span>`;
+                audioBtn.classList.remove('hidden');
+            } else {
+                mainTextEl.innerHTML = `Color ${task.part.label} <span class="underline decoration-amber-400 text-amber-300 uppercase">${task.color.name}</span>!`;
+                if (state.mode === 'text') {
+                    audioBtn.classList.add('hidden');
+                } else {
+                    audioBtn.classList.remove('hidden');
+                }
+            }
+
+            if (state.mode === 'both' || state.mode === 'audio') {
+                speakEnglish(getCurrentTaskPhrase());
+            }
+        }
+
+        function handleMonsterPartClick(clickedPartId, groupEl) {
+            if (state.roundLocked) return;
+            initAudioContext();
+
+            const task = state.tasks[state.currentTaskIndex];
+            if (!task) return;
+
+            // Tjek 1: Har eleven valgt en farve på paletten først?
+            if (!state.selectedColorId) {
+                playWrongSound();
+                const paletteGrid = document.getElementById('palette-grid');
+                paletteGrid.classList.remove('animate-shake');
+                void paletteGrid.offsetWidth;
+                paletteGrid.classList.add('animate-shake');
+                showToast('Vælg først et farveord på paletten 👉', false);
+                return;
+            }
+
+            // Tjek 2: Trykkede eleven på den rigtige kropsdel?
+            if (clickedPartId !== task.part.id) {
+                playWrongSound();
+                groupEl.classList.remove('animate-shake');
+                void groupEl.offsetWidth;
+                groupEl.classList.add('animate-shake');
+                showToast(`Hov! Vi skal male ${task.part.labelDa} (${task.part.label})!`, false);
+                return;
+            }
+
+            // Tjek 3: Har eleven valgt den rigtige farve til kropsdelen?
+            if (state.selectedColorId !== task.color.id) {
+                playWrongSound();
+                const chosenColor = COLORS.find(c => c.id === state.selectedColorId);
+                groupEl.classList.remove('animate-shake');
+                void groupEl.offsetWidth;
+                groupEl.classList.add('animate-shake');
+                showToast(`Det er "${chosenColor.name}" – prøv en anden farve!`, false);
+                return;
+            }
+
+            // RIGTIGT SVAR!
+            state.roundLocked = true;
+            playCorrectSound();
+            paintMonsterPartSVG(task.part.id, task.color);
+            state.completedParts[task.part.id] = task.color;
+            spawnBurstParticles(groupEl, task.color.hex);
+
+            if (state.currentTurn === 1) {
+                state.team1Score++;
+            } else {
+                state.team2Score++;
+            }
+
+            const winnerName = state.currentTurn === 1 ? state.team1Name : state.team2Name;
+            showToast(`Flot, ${winnerName}! "${task.color.name.toUpperCase()}"! +1 point`, true);
+            speakEnglish(`${task.color.name}!`);
+
+            state.currentTaskIndex++;
+            updateTurnAndScoreHUD();
+
+            setTimeout(() => {
+                if (state.currentTaskIndex >= state.tasks.length) {
+                    showVictoryModal();
+                } else {
+                    state.currentTurn = state.currentTurn === 1 ? 2 : 1;
+                    loadCurrentTask();
+                }
+            }, 1350);
+        }
+
+        function showVictoryModal() {
+            playVictoryFanfare();
+            document.querySelectorAll('#monster-stage .monster-part').forEach(el => {
+                el.classList.remove('monster-part-target');
+            });
+
+            let headline = 'Uafgjort – super samarbejde!';
+            if (state.team1Score > state.team2Score) {
+                headline = `${state.team1Name} fik flest point!`;
+            } else if (state.team2Score > state.team1Score) {
+                headline = `${state.team2Name} fik flest point!`;
+            }
+
+            document.getElementById('winner-title').textContent = headline;
+            document.getElementById('winner-score-summary').textContent =
+                `${state.team1Name}: ${state.team1Score} point  •  ${state.team2Name}: ${state.team2Score} point`;
+            document.getElementById('winner-modal').classList.remove('hidden');
+        }
+
+        function startGame() {
+            initAudioContext();
+            loadVoices();
+
+            state.team1Name = document.getElementById('team1-input').value.trim() || 'Hold 1';
+            state.team2Name = document.getElementById('team2-input').value.trim() || 'Hold 2';
+            state.team1Score = 0;
+            state.team2Score = 0;
+            state.currentTurn = 1;
+            state.currentTaskIndex = 0;
+            state.selectedColorId = null;
+            state.completedParts = {};
+
+            document.getElementById('hud-team1-name').textContent = state.team1Name;
+            document.getElementById('hud-team2-name').textContent = state.team2Name;
+
+            // Byg opgaveliste ud fra det valgte monster og de 11 farver
+            const monster = MONSTERS[state.monsterIndex];
+            const shuffledParts = shuffleArray(monster.parts);
+            const shuffledColors = shuffleArray(COLORS);
+
+            state.tasks = shuffledParts.map((part, idx) => ({
+                part,
+                color: shuffledColors[idx % shuffledColors.length]
+            }));
+
+            renderMonster();
+            renderPalette(shuffleArray(COLORS));
+
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('winner-modal').classList.add('hidden');
+            const gameScreen = document.getElementById('game-screen');
+            gameScreen.classList.remove('hidden');
+            gameScreen.classList.add('flex');
+
+            loadCurrentTask();
+        }
+
+        function returnToSettings() {
+            state.roundLocked = true;
+            document.getElementById('winner-modal').classList.add('hidden');
+            const gameScreen = document.getElementById('game-screen');
+            gameScreen.classList.add('hidden');
+            gameScreen.classList.remove('flex');
+            document.getElementById('start-screen').classList.remove('hidden');
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            } else {
+                document.exitFullscreen().catch(() => {});
+            }
+        }
+
+        /**
+         * =====================================================================
+         * INITIALISERING
+         * =====================================================================
+         */
+        window.addEventListener('DOMContentLoaded', () => {
+            renderPreviewColors();
+            renderVoiceTestGrid();
+            setupStartOptionButtons();
+            loadVoices();
+
+            document.getElementById('start-game-btn').addEventListener('click', startGame);
+            document.getElementById('start-fullscreen-btn').addEventListener('click', toggleFullscreen);
+            document.getElementById('fullscreen-btn').addEventListener('click', toggleFullscreen);
+            document.getElementById('settings-btn').addEventListener('click', returnToSettings);
+            document.getElementById('back-to-menu-btn').addEventListener('click', returnToSettings);
+            document.getElementById('play-again-btn').addEventListener('click', startGame);
+
+            document.getElementById('shuffle-palette-btn').addEventListener('click', () => {
+                renderPalette(shuffleArray(COLORS));
+                if (state.selectedColorId) {
+                    const activeBtn = document.querySelector(`.palette-btn[data-color-id="${state.selectedColorId}"]`);
+                    if (activeBtn) activeBtn.classList.add('palette-btn-selected');
+                }
+            });
+
+            document.getElementById('replay-audio-btn').addEventListener('click', () => {
+                initAudioContext();
+                const phrase = getCurrentTaskPhrase();
+                if (phrase) speakEnglish(phrase);
+            });
+
+            // Stemme-modal hændelser
+            const openVoiceModal = () => {
+                initAudioContext();
+                loadVoices();
+                document.getElementById('voice-modal').classList.remove('hidden');
+            };
+            const closeVoiceModal = () => {
+                stopTestAllSequence();
+                document.getElementById('voice-modal').classList.add('hidden');
+            };
+
+            document.getElementById('open-voice-panel-btn').addEventListener('click', openVoiceModal);
+            document.getElementById('hud-voice-btn').addEventListener('click', openVoiceModal);
+            document.getElementById('close-voice-modal-btn').addEventListener('click', closeVoiceModal);
+            document.getElementById('done-voice-modal-btn').addEventListener('click', closeVoiceModal);
+            document.getElementById('test-all-colors-btn').addEventListener('click', playAllColorsSequence);
+
+            document.getElementById('voice-select').addEventListener('change', (e) => {
+                state.selectedVoiceURI = e.target.value;
+                state.preferredVoice = state.englishVoices.find(v => v.voiceURI === e.target.value) || null;
+                populateVoiceDropdown();
+                speakEnglish('pink');
+            });
+
+            window.addEventListener('keydown', (e) => {
+                if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
+                if (e.code === 'Space' && !document.getElementById('game-screen').classList.contains('hidden')) {
+                    e.preventDefault();
+                    const phrase = getCurrentTaskPhrase();
+                    if (phrase) speakEnglish(phrase);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
